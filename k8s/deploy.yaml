@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: student-platform-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: student-platform-service
+  template:
+    metadata:
+      labels:
+        app: student-platform-service
+    spec:
+      volumes:
+        - name: assets-volume
+          persistentVolumeClaim:
+            claimName: azure-file-pvc
+        - name: db-volume
+          persistentVolumeClaim:
+            claimName: azure-db-pvc
+      initContainers:
+        - name: assets-gui-init
+          image: serviceregistry.azurecr.io/website-ui:0.0.4
+          command:
+            - bash
+            - -ec
+            - |
+              rsync -arv --progress /initial-assets/assets/ /usr/share/nginx/html/assets/
+          imagePullPolicy: Always
+          volumeMounts: 
+            - name: assets-volume
+              mountPath: /usr/share/nginx/html/assets
+        - name: db-init
+          image: nixery.dev/shell/sqlite
+          command: ["/bin/sh", "-c"]
+          args: ["if [ ! -f /db/database.db ]; then sqlite3 /db/database.db '.databases'; fi"]
+          volumeMounts:
+            - mountPath: "/db"
+              name: db-volume
+      containers:
+        - name: student-platform-backend
+          image: serviceregistry.azurecr.io/code-master-backend:0.0.18
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - mountPath: "/app/resources"
+              name: assets-volume
+            - mountPath: "/db"
+              name: db-volume
+        - name: student-platform-ui
+          image: serviceregistry.azurecr.io/website-ui:0.0.4
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - mountPath: "/usr/share/nginx/html/assets"
+              name: assets-volume
+---
+
+kind: Service
+apiVersion: v1
+metadata:
+  name: student-platform-service
+spec:
+  selector:
+    app: student-platform-service
+  ports:
+    - name: http-frontend
+      protocol: TCP
+      port: 80
+      targetPort: 80
+    - name: http-backend
+      protocol: TCP
+      port: 8080
+      targetPort: 8080
+  type: LoadBalancer

@@ -1,0 +1,24 @@
+server:
+  port: 9000
+spring:
+  datasource:
+    url: jdbc:sqlite:./database.db
+    driver-class-name: org.sqlite.JDBC
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    show-sql: false
+
+admin-pass: your-pass
+jwt-secret-key : your-secret-key
+management:
+  endpoints:
+    web:
+      exposure:
+        include: '*'
+info:
+  app:
+    name: Student Management Service
+    version: '@{project.version}'
+
