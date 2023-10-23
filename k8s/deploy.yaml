@@ -40,7 +40,7 @@ spec:
               name: db-volume
       containers:
         - name: student-platform-backend
-          image: serviceregistry.azurecr.io/code-master-backend:0.0.18
+          image: serviceregistry.azurecr.io/student-management-service:0.0.18
           ports:
             - containerPort: 8080
           volumeMounts:
